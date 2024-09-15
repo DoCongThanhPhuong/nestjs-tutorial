@@ -1,0 +1,40 @@
+services:
+  mysql:
+    image: mysql:8.0
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql-db:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_DB}
+      MYSQL_USER: ${DATABASE_USERNAME}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+    command: ['redis-server', '--save', '60', '1', '--loglevel', 'warning']
+
+  hrm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - .env
+
+volumes:
+  mysql-db:
+  redis-data:
