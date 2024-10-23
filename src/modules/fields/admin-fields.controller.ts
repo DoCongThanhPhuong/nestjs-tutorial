@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Param, Post, Put } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateFieldDto, FieldResponseDto, UpdateFieldDto } from './dto';
 import { FieldsService } from './fields.service';
 
@@ -8,6 +8,7 @@ import { FieldsService } from './fields.service';
 export class AdminFieldsController {
   constructor(private readonly fieldsService: FieldsService) {}
 
+  @ApiOperation({ summary: 'Add field to form' })
   @Post()
   createField(
     @Param('formId') formId: number,
@@ -16,7 +17,8 @@ export class AdminFieldsController {
     return this.fieldsService.createField(formId, createFieldDto);
   }
 
-  @Put(':fieldId')
+  @ApiOperation({ summary: 'Update form field' })
+  @Patch(':fieldId')
   updateFieldById(
     @Param('formId') formId: number,
     @Param('fieldId') fieldId: number,
@@ -25,6 +27,7 @@ export class AdminFieldsController {
     return this.fieldsService.updateFieldById(formId, fieldId, updateFieldDto);
   }
 
+  @ApiOperation({ summary: 'Delete form field' })
   @Delete(':fieldId')
   deleteFieldById(
     @Param('formId') formId: number,

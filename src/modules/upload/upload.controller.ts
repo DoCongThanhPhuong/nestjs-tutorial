@@ -7,7 +7,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UploadService } from './upload.service';
 
 @ApiTags('upload')
@@ -16,6 +16,7 @@ import { UploadService } from './upload.service';
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
+  @ApiOperation({ summary: 'Upload a file to S3' })
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file: Express.Multer.File) {
@@ -23,6 +24,7 @@ export class UploadController {
     return fileName;
   }
 
+  @ApiOperation({ summary: 'Delete an uploaded file' })
   @Delete()
   async deleteFile(@Body('fileKey') fileKey: string): Promise<void> {
     await this.uploadService.deleteFile(fileKey);

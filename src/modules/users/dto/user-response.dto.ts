@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { DepartmentResponseDto } from 'src/modules/departments/dto';
+import { RoleResponseDto } from 'src/modules/roles/dto';
 
 export class UserResponseDto {
   @ApiProperty()
@@ -73,6 +74,9 @@ export class UserResponseDto {
 
   @Type(() => DepartmentResponseDto)
   managedDepartment: DepartmentResponseDto;
+
+  @Type(() => RoleResponseDto)
+  role: RoleResponseDto;
 
   password: string;
 }

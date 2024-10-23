@@ -19,7 +19,7 @@ export class User {
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
   id: number;
 
-  @Column({ name: 'code', unique: true, nullable: true })
+  @Column({ name: 'code', unique: true, default: null })
   code: string;
 
   @Column({ name: 'firstname', nullable: false })

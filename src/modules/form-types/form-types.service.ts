@@ -6,8 +6,13 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { hasChildEntities } from 'src/utils/has-children';
 import { Repository } from 'typeorm';
-import { CreateFormTypeDto, UpdateFormTypeDto } from './dto';
+import {
+  CreateFormTypeDto,
+  FormTypeResponseDto,
+  UpdateFormTypeDto,
+} from './dto';
 import { FormType } from './entities/form-type.entity';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class FormTypesService {
@@ -15,26 +20,54 @@ export class FormTypesService {
     @InjectRepository(FormType)
     private readonly formTypeRepository: Repository<FormType>,
   ) {}
-  async create(createFormTypeDto: CreateFormTypeDto): Promise<FormType> {
+  async create(
+    createFormTypeDto: CreateFormTypeDto,
+  ): Promise<FormTypeResponseDto> {
+    const { name } = createFormTypeDto;
+
+    const existingFormType = await this.formTypeRepository.findOne({
+      where: { name },
+    });
+    if (existingFormType) {
+      throw new BadRequestException('Form type name already exists');
+    }
+
     const formType = this.formTypeRepository.create(createFormTypeDto);
-    return this.formTypeRepository.save(formType);
+    const savedFormType = await this.formTypeRepository.save(formType);
+    return plainToInstance(FormTypeResponseDto, savedFormType);
   }
 
-  async findAll(): Promise<FormType[]> {
-    return this.formTypeRepository.find();
+  async findAll(): Promise<FormTypeResponseDto[]> {
+    const formTypes = await this.formTypeRepository.find();
+    return plainToInstance(FormTypeResponseDto, formTypes);
   }
 
   findOne(id: number) {
     const formType = this.formTypeRepository.findOne({ where: { id } });
-    if (!formType) throw new NotFoundException(`Form type not found`);
-
-    return formType;
+    if (!formType) throw new NotFoundException('Form type not found');
+    return plainToInstance(FormTypeResponseDto, formType);
   }
 
   async update(
     id: number,
     updateFormTypeDto: UpdateFormTypeDto,
-  ): Promise<FormType> {
+  ): Promise<FormTypeResponseDto> {
+    const { name } = updateFormTypeDto;
+    const isUnable = await hasChildEntities(
+      this.formTypeRepository,
+      id,
+      'forms',
+    );
+    if (isUnable) throw new BadRequestException('Unable to update form type');
+    if (name) {
+      const existingFormType = await this.formTypeRepository.findOne({
+        where: { name },
+      });
+      if (existingFormType && existingFormType.id !== id) {
+        throw new BadRequestException('Form type name already exists');
+      }
+    }
+
     const formType = await this.formTypeRepository.preload({
       id,
       ...updateFormTypeDto,
@@ -42,7 +75,8 @@ export class FormTypesService {
 
     if (!formType) throw new NotFoundException(`Form type not found`);
 
-    return this.formTypeRepository.save(formType);
+    const savedFormType = this.formTypeRepository.save(formType);
+    return plainToInstance(FormTypeResponseDto, savedFormType);
   }
 
   async remove(id: number) {

@@ -1,5 +1,5 @@
 import { Body, Controller, Patch, Post } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
   AuthEmailLoginDto,
@@ -15,6 +15,7 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @ApiOperation({ summary: 'Login' })
   @ApiOkResponse({
     type: LoginResponseDto,
   })
@@ -23,6 +24,7 @@ export class AuthController {
     return this.authService.validateLogin(loginDto);
   }
 
+  @ApiOperation({ summary: 'Forgot password' })
   @Post('forgot-password')
   async forgotPassword(
     @Body() forgotPasswordDto: AuthForgotPasswordDto,
@@ -30,6 +32,7 @@ export class AuthController {
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
 
+  @ApiOperation({ summary: 'Reset password' })
   @Patch('reset-password')
   resetPassword(@Body() resetPasswordDto: AuthResetPasswordDto): Promise<void> {
     return this.authService.resetPassword(
@@ -38,6 +41,7 @@ export class AuthController {
     );
   }
 
+  @ApiOperation({ summary: 'Refresh token' })
   @ApiOkResponse({
     type: RefreshResponseDto,
   })

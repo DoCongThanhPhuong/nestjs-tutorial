@@ -61,10 +61,10 @@ export class UploadService {
     return signedUrl;
   }
 
-  async deleteFile(fileKey: string): Promise<void> {
+  async deleteFile(fileName: string): Promise<void> {
     const params = {
       Bucket: this.bucketName,
-      Key: fileKey,
+      Key: fileName,
     };
 
     try {

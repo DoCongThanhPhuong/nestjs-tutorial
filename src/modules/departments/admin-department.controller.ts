@@ -1,11 +1,22 @@
-import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserResponseDto } from '../users/dto';
+import { PaginationResponse, PaginationResponseDto } from 'src/common/dto';
+import { QueryUserDto, UserItemDto } from '../users/dto';
 import { UsersService } from '../users/users.service';
 import { DepartmentsService } from './departments.service';
 import {
@@ -23,22 +34,7 @@ export class AdminDepartmentsController {
     private readonly usersService: UsersService,
   ) {}
 
-  @ApiOkResponse({ type: DepartmentResponseDto })
-  @Get(':id')
-  findOne(@Param('id') id: number): Promise<DepartmentResponseDto> {
-    return this.departmentsService.findDepartmentById(id);
-  }
-
-  @ApiOkResponse({
-    type: [UserResponseDto],
-  })
-  @Get(':departmentId/users')
-  listDepartmentEmployees(
-    @Param('departmentId') departmentId: number,
-  ): Promise<UserResponseDto[]> {
-    return this.usersService.listDepartmentEmployees(departmentId);
-  }
-
+  @ApiOperation({ summary: 'Create new department' })
   @ApiCreatedResponse({ type: DepartmentResponseDto })
   @Post()
   createDepartment(
@@ -47,9 +43,24 @@ export class AdminDepartmentsController {
     return this.departmentsService.createDepartment(createDepartmentDto);
   }
 
+  @ApiOperation({ summary: 'List all departments' })
+  @ApiOkResponse({ type: [DepartmentResponseDto] })
+  @Get()
+  listAll(): Promise<DepartmentResponseDto[]> {
+    return this.departmentsService.listAllDepartments();
+  }
+
+  @ApiOperation({ summary: 'View department details' })
   @ApiOkResponse({ type: DepartmentResponseDto })
-  @Put(':id')
-  updateDepartmentById(
+  @Get(':id')
+  findOne(@Param('id') id: number): Promise<DepartmentResponseDto> {
+    return this.departmentsService.findDepartmentById(id);
+  }
+
+  @ApiOperation({ summary: 'Update department' })
+  @ApiOkResponse({ type: DepartmentResponseDto })
+  @Patch(':id')
+  updateById(
     @Param('id') id: number,
     @Body() updateDepartmentDto: UpdateDepartmentDto,
   ) {
@@ -59,14 +70,22 @@ export class AdminDepartmentsController {
     );
   }
 
-  @ApiOkResponse({ type: [DepartmentResponseDto] })
-  @Get()
-  listAllDepartments(): Promise<DepartmentResponseDto[]> {
-    return this.departmentsService.listAllDepartments();
+  @ApiOperation({ summary: 'Delete department' })
+  @ApiOkResponse({ type: DepartmentResponseDto })
+  @Delete(':id')
+  deleteById(@Param('id') id: number) {
+    return this.departmentsService.deleteDepartmentById(id);
   }
 
-  @Patch('promote-official')
-  promoteToOfficial(employeeId: number): Promise<void> {
-    return this.usersService.promoteToOfficial(employeeId);
+  @ApiOperation({ summary: 'List department employees' })
+  @ApiOkResponse({
+    type: PaginationResponse(UserItemDto),
+  })
+  @Get(':departmentId/employees')
+  listDepartmentEmployees(
+    @Param('departmentId') departmentId: number,
+    @Query() query: QueryUserDto,
+  ): Promise<PaginationResponseDto<UserItemDto>> {
+    return this.usersService.listDepartmentEmployees(departmentId, query);
   }
 }

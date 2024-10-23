@@ -5,6 +5,10 @@ import { PermissionResponseDto } from 'src/modules/permissions/dto';
 export class RoleResponseDto {
   @ApiProperty()
   @Expose()
+  id: number;
+
+  @ApiProperty()
+  @Expose()
   name: string;
 
   @ApiProperty()

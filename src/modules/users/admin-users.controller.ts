@@ -12,6 +12,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { PaginationResponse, PaginationResponseDto } from 'src/common/dto';
@@ -31,6 +32,7 @@ import { UsersService } from './users.service';
 export class AdminUsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiOperation({ summary: 'Create new user' })
   @ApiCreatedResponse({
     type: UserResponseDto,
   })
@@ -39,16 +41,18 @@ export class AdminUsersController {
     return this.usersService.createUser(createUserDto);
   }
 
+  @ApiOperation({ summary: 'List all users' })
   @ApiOkResponse({
-    type: PaginationResponse(UserResponseDto),
+    type: PaginationResponse(UserItemDto),
   })
   @Get()
-  findManyWithPagination(
+  listAll(
     @Query() query: QueryUserDto,
   ): Promise<PaginationResponseDto<UserItemDto>> {
-    return this.usersService.findManyUsersWithPagination(query);
+    return this.usersService.listAllUsers(query);
   }
 
+  @ApiOperation({ summary: 'View user details' })
   @ApiOkResponse({
     type: UserResponseDto,
   })
@@ -57,6 +61,7 @@ export class AdminUsersController {
     return this.usersService.findUserByIdWithCache(id);
   }
 
+  @ApiOperation({ summary: 'Update user by id' })
   @ApiOkResponse({
     type: UserResponseDto,
   })
@@ -65,10 +70,10 @@ export class AdminUsersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    console.log('🚀 ~ AdminUsersController ~ updateUserDto:', updateUserDto);
     return this.usersService.adminUpdateUserById(id, updateUserDto);
   }
 
+  @ApiOperation({ summary: 'Change user status' })
   @Patch(':id/status')
   toggleUserStatus(
     @Param('id') employeeId: number,

@@ -67,7 +67,6 @@ export class FieldsService {
     Object.assign(field, updateFieldDto);
 
     const { type, options } = field;
-
     if (!validateField(type, options)) {
       throw new NotFoundException(`Options is invalid for field type ${type}`);
     }

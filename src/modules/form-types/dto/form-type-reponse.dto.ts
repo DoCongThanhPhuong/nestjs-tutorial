@@ -13,9 +13,5 @@ export class FormTypeResponseDto {
 
   @ApiProperty()
   @Expose()
-  description: string;
-
-  @ApiProperty()
-  @Expose()
   scope: EFormTypeScope;
 }

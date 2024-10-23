@@ -13,7 +13,7 @@ import { PaginationResponseDto } from 'src/common/dto';
 import { EFormTypeScope, EUserStatus, USER_CACHE_PREFIX } from 'src/constants';
 import { hashPassword } from 'src/utils/hash-password';
 import { paginateData } from 'src/utils/paginate-data';
-import { FindOneOptions, FindOptionsWhere, Not, Repository } from 'typeorm';
+import { FindOneOptions, Not, Repository } from 'typeorm';
 import { DepartmentsService } from '../departments/departments.service';
 import { RedisService } from '../redis/redis.service';
 import { RolesService } from '../roles/roles.service';
@@ -22,6 +22,7 @@ import {
   ChangePasswordDto,
   CreateUserDto,
   QueryUserDto,
+  UpdateProfileDto,
   UpdateUserDto,
   UserItemDto,
   UserResponseDto,
@@ -55,7 +56,7 @@ export class UsersService {
     return false;
   }
 
-  async getAllUserIds(isOfficial?: boolean): Promise<UserResponseDto[]> {
+  async getAllUserIds(isOfficial?: boolean) {
     if (isOfficial)
       return this.userRepository.find({
         where: { isOfficial },
@@ -128,21 +129,31 @@ export class UsersService {
     return employees.map((employee) => employee.email);
   }
 
-  async findManyUsersWithPagination(
+  async listAllUsers(
     query: QueryUserDto,
   ): Promise<PaginationResponseDto<UserItemDto>> {
-    const { page, size, departmentId } = query;
-    const where: FindOptionsWhere<User> = {};
+    const { page, size, departmentId, search } = query;
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+
     if (departmentId) {
-      where.departmentId = departmentId;
+      queryBuilder.andWhere('user.departmentId = :departmentId', {
+        departmentId,
+      });
     }
-    const [users, total] = await this.userRepository.findAndCount({
-      select: ['code', 'firstname', 'lastname', 'email'],
-      skip: (page - 1) * size,
-      take: size,
-      where: where,
-      order: { id: 'DESC' },
-    });
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(user.firstname LIKE :search OR user.lastname LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [users, total] = await queryBuilder
+      .select(['user.code', 'user.firstname', 'user.lastname', 'user.email'])
+      .skip((page - 1) * size)
+      .take(size)
+      .getManyAndCount();
 
     return paginateData(plainToInstance(UserItemDto, users), page, size, total);
   }
@@ -166,14 +177,17 @@ export class UsersService {
 
     createUserDto.password = await hashPassword(createUserDto.password);
     const newUser = this.userRepository.create(createUserDto);
-    const savedUser = await this.userRepository.save(newUser);
+    const user = await this.userRepository.save(newUser);
+    const year = new Date().getFullYear();
+    user.code = `${year}${user.id.toString().padStart(5, '0')}`;
+    const savedUser = await this.userRepository.save(user);
     await this.redisService.deleteKey(`${USER_CACHE_PREFIX}${savedUser.id}`);
     return plainToInstance(UserResponseDto, savedUser);
   }
 
   async updateProfileById(
     id: number,
-    data: UpdateUserDto,
+    data: UpdateProfileDto,
     file?: Express.Multer.File,
   ): Promise<UserResponseDto> {
     const foundUser = await this.findUserByIdWithCache(id);
@@ -181,34 +195,17 @@ export class UsersService {
     if (data.password) {
       data.password = await hashPassword(data.password);
     }
-
-    if (data.roleId) {
-      const foundRole = await this.rolesService.checkExists(data.roleId);
-      if (!foundRole) throw new NotFoundException('Role not found');
-    }
-
     if (file) {
       if (foundUser.avatar) {
         await this.uploadService.deleteFile(foundUser.avatar);
       }
-
       foundUser.avatar = await this.uploadService.uploadFile(file);
     }
 
-    const updatedUser = await this.userRepository.save({
-      ...foundUser,
-      ...data,
-    });
-
-    if (updatedUser.avatar) {
-      updatedUser.avatar = await this.uploadService.getFileUrl(
-        updatedUser.avatar,
-      );
-    }
-
+    await this.userRepository.update(id, data);
     await this.redisService.deleteKey(`${USER_CACHE_PREFIX}${id}`);
-
-    return plainToInstance(UserResponseDto, updatedUser);
+    const savedUser = await this.findUserByIdWithCache(id);
+    return plainToInstance(UserResponseDto, savedUser);
   }
 
   async adminUpdateUserById(
@@ -218,80 +215,40 @@ export class UsersService {
   ): Promise<UserResponseDto> {
     const foundUser = await this.findUserByIdWithCache(id);
     if (!foundUser) throw new NotFoundException('User not found');
+    const { password, roleId, departmentId } = data;
 
-    if (data.password) {
+    if (password) {
       data.password = await hashPassword(data.password);
     }
 
-    if (data.roleId) {
+    if (roleId) {
       const foundRole = await this.rolesService.checkExists(data.roleId);
       if (!foundRole) throw new NotFoundException('Role not found');
     }
 
-    if (file) {
-      if (foundUser.avatar)
-        await this.uploadService.deleteFile(foundUser.avatar);
+    if (departmentId) {
+      const department = await this.departmentService.checkExists(departmentId);
+      if (!department) throw new NotFoundException('Department not found');
+    }
 
+    if (file) {
+      if (foundUser.avatar) {
+        await this.uploadService.deleteFile(foundUser.avatar);
+      }
       foundUser.avatar = await this.uploadService.uploadFile(file);
     }
 
-    const updatedUser = await this.userRepository.save({
-      ...foundUser,
-      ...data,
-    });
-
-    if (updatedUser.avatar) {
-      updatedUser.avatar = await this.uploadService.getFileUrl(
-        updatedUser.avatar,
-      );
-    }
-
+    await this.userRepository.update(id, data);
     await this.redisService.deleteKey(`${USER_CACHE_PREFIX}${id}`);
-
-    return plainToInstance(UserResponseDto, updatedUser);
+    const savedUser = await this.findUserByIdWithCache(id);
+    return plainToInstance(UserResponseDto, savedUser);
   }
 
-  // async getEmployees(
-  //   managerId: number,
-  //   isOfficial?: boolean,
-  // ): Promise<UserResponseDto[]> {
-  //   const manager = await this.userRepository
-  //     .createQueryBuilder('user')
-  //     .leftJoinAndSelect('user.managedDepartment', 'managedDepartment')
-  //     .leftJoinAndSelect('managedDepartment.director', 'director')
-  //     .leftJoinAndSelect('user.departmentsManaged', 'departmentsManaged')
-  //     .leftJoinAndSelect('departmentsManaged.manager', 'manager')
-  //     .where('user.id = :managerId', { managerId })
-  //     .andWhere('user.status = :status', { status: EUserStatus.ACTIVE })
-  //     .getOne();
-
-  //   if (!manager) throw new NotFoundException('User not found');
-
-  //   let result: User[] = [];
-  //   const queryOptions: any = {};
-
-  //   if (typeof isOfficial === 'boolean') {
-  //     queryOptions.isOfficial = isOfficial;
-  //   }
-
-  //   if (manager.managedDepartment) {
-  //     const directorId = manager.managedDepartment.director?.id;
-  //     queryOptions.departmentId = manager.managedDepartment?.id;
-  //     queryOptions.id = Not(In([manager.id, directorId]));
-  //   } else if (
-  //     manager.departmentsManaged &&
-  //     manager.departmentsManaged?.length > 0
-  //   ) {
-  //     const managerIds = manager.departmentsManaged?.map((d) => d.manager?.id);
-  //     queryOptions.id = In(managerIds);
-  //   }
-  //   result = await this.userRepository.find({ where: queryOptions });
-
-  //   return plainToInstance(UserResponseDto, result);
-  // }
-
-  async listDepartmentEmployees(departmentId: number, user?: User) {
-    let employees;
+  async listDepartmentEmployees(
+    departmentId: number,
+    query: QueryUserDto,
+    user?: User,
+  ) {
     const department =
       await this.departmentService.findDepartmentById(departmentId);
 
@@ -301,11 +258,28 @@ export class UsersService {
       user.id !== department.managerId
     ) {
       throw new BadRequestException('You do not have permission');
-    } else {
-      employees = await this.userRepository.find({ where: { departmentId } });
     }
 
-    return employees;
+    const { page, size, search } = query;
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+    queryBuilder.andWhere('user.departmentId = :departmentId', {
+      departmentId,
+    });
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(user.firstname LIKE :search OR user.lastname LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [users, total] = await queryBuilder
+      .select(['user.code', 'user.firstname', 'user.lastname', 'user.email'])
+      .skip((page - 1) * size)
+      .take(size)
+      .getManyAndCount();
+
+    return paginateData(plainToInstance(UserItemDto, users), page, size, total);
   }
 
   async findUserByIdWithCache(userId: number) {
@@ -318,13 +292,16 @@ export class UsersService {
       where: { id: userId },
       relations: ['department', 'managedDepartment', 'departmentsManaged'],
     });
+    const role = await this.rolesService.findRoleById(user.roleId);
 
-    const userResponse = user ? plainToInstance(UserResponseDto, user) : null;
+    const userResponse = user
+      ? plainToInstance(UserResponseDto, { ...user, role })
+      : null;
 
     await this.redisService.setWithExpiration(
       cacheKey,
       JSON.stringify(userResponse),
-      3000,
+      86400,
     );
 
     return userResponse;

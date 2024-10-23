@@ -12,6 +12,8 @@ import { CreateRoleDto, RoleResponseDto, UpdateRoleDto } from './dto';
 import { RolePermission } from './entities/role-permisssion.entity';
 import { Role } from './entities/role.entity';
 import { PermissionResponseDto } from '../permissions/dto';
+import { USER_CACHE_PREFIX } from 'src/constants';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class RolesService {
@@ -22,6 +24,7 @@ export class RolesService {
     @InjectRepository(RolePermission)
     private readonly rolePermissionRepository: Repository<RolePermission>,
     private readonly permissionsService: PermissionsService,
+    private readonly redisService: RedisService,
   ) {}
 
   async checkExists(id: number): Promise<boolean> {
@@ -84,15 +87,17 @@ export class RolesService {
     }
   }
 
-  async findRoleById(id: number) {
+  async findRoleById(id: number): Promise<RoleResponseDto> {
     const role = await this.roleRepository.findOne({ where: { id } });
     const permissions = await this.listPermissionsOfRole(id);
     if (!role) throw new NotFoundException('Role not found');
-    return { ...role, permissions };
+
+    return plainToInstance(RoleResponseDto, { ...role, permissions });
   }
 
   async listAllRoles() {
-    return await this.roleRepository.find();
+    const roles = await this.roleRepository.find();
+    return plainToInstance(RoleResponseDto, roles);
   }
 
   async updateRole(
@@ -107,7 +112,7 @@ export class RolesService {
       const { name, description, permissionIds = [] } = updateRoleDto;
       const role = await queryRunner.manager.findOne(Role, {
         where: { id: roleId },
-        relations: ['rolePermissions'],
+        relations: ['rolePermissions', 'users'],
       });
       if (!role) throw new NotFoundException('Role not found');
 
@@ -137,7 +142,12 @@ export class RolesService {
           await queryRunner.manager.save(RolePermission, newRolePermissions);
         }
       }
-
+      const cacheKeys = role.users.map(
+        (user) => `${USER_CACHE_PREFIX}${user.id}`,
+      );
+      if (cacheKeys.length > 0) {
+        await this.redisService.deleteManyKeys(cacheKeys);
+      }
       await queryRunner.commitTransaction();
       const savedRole = await this.findRoleById(roleId);
       return plainToInstance(RoleResponseDto, savedRole);

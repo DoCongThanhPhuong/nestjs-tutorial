@@ -71,11 +71,11 @@ export class MailService {
     IMailData: IMailData<{
       formType: string;
       formTitle: string;
-      action: 'created' | 'approved' | 'rejected';
+      action: 'published' | 'approved' | 'rejected';
     }>,
   ): Promise<void> {
     const actionMap = {
-      created: 'created',
+      published: 'published',
       approved: 'approved',
       rejected: 'rejected',
     };

@@ -96,7 +96,7 @@ export class FormsService {
       data: {
         formType: formType.name,
         formTitle: form.title,
-        action: 'created',
+        action: 'published',
       },
     });
 

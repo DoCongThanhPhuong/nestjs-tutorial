@@ -8,12 +8,6 @@ export class UpdateDepartmentDto {
   @IsString()
   name?: string;
 
-  @ApiPropertyOptional({ description: 'Prefix employee code' })
-  @IsOptional()
-  @IsNotEmpty()
-  @IsString()
-  prefix?: string;
-
   @ApiPropertyOptional()
   @IsOptional()
   @IsNotEmpty()

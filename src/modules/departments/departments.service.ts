@@ -11,6 +11,7 @@ import { EUserStatus, USER_CACHE_PREFIX } from 'src/constants';
 import { DataSource, Repository } from 'typeorm';
 import { RedisService } from '../redis/redis.service';
 import { UserResponseDto } from '../users/dto';
+import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import {
   CreateDepartmentDto,
@@ -38,9 +39,9 @@ export class DepartmentsService {
     return department ? true : false;
   }
 
-  async checkExistsName(name: string, prefix: string): Promise<boolean> {
+  async checkExistsName(name: string): Promise<boolean> {
     const department = await this.departmentRepository.findOne({
-      where: [{ name }, { prefix }],
+      where: { name },
       select: ['id'],
     });
     return department ? true : false;
@@ -49,14 +50,14 @@ export class DepartmentsService {
   async createDepartment(
     createDepartmentDto: CreateDepartmentDto,
   ): Promise<DepartmentResponseDto> {
-    const { name, prefix } = createDepartmentDto;
-    const department = await this.checkExistsName(name, prefix);
+    const { name } = createDepartmentDto;
+    const department = await this.checkExistsName(name);
     if (department) {
       throw new BadRequestException('Name or prefix already exists');
     }
     const newDepartment = this.departmentRepository.create(createDepartmentDto);
     const savedDepartment = await this.departmentRepository.save(newDepartment);
-    return savedDepartment;
+    return plainToInstance(DepartmentResponseDto, savedDepartment);
   }
 
   async listAllDepartments(): Promise<DepartmentResponseDto[]> {
@@ -69,12 +70,18 @@ export class DepartmentsService {
     return [user.department];
   }
 
-  async findDepartmentById(id: number): Promise<DepartmentResponseDto> {
+  async findDepartmentById(
+    id: number,
+    userId?: number,
+  ): Promise<DepartmentResponseDto> {
     const department = await this.departmentRepository.findOne({
       where: { id },
-      relations: ['users', 'director', 'manager'],
+      relations: ['director', 'manager'],
     });
     if (!department) throw new NotFoundException('Department not found');
+    if (userId && userId !== department.directorId) {
+      throw new BadRequestException('Unable to access');
+    }
 
     return plainToInstance(DepartmentResponseDto, department);
   }
@@ -93,7 +100,7 @@ export class DepartmentsService {
 
     const { managerId, directorId } = updateDepartmentDto;
 
-    if (managerId) {
+    if (managerId && managerId !== department.managerId) {
       const manager = await this.userService.findOneUserBy({
         id: managerId,
         status: EUserStatus.ACTIVE,
@@ -105,7 +112,7 @@ export class DepartmentsService {
       deleteCacheUserIds.push(managerId);
     }
 
-    if (directorId) {
+    if (directorId && directorId !== department.directorId) {
       const director = await this.userService.findOneUserBy({
         id: directorId,
         status: EUserStatus.ACTIVE,
@@ -116,8 +123,9 @@ export class DepartmentsService {
     const cacheKeys = deleteCacheUserIds.map(
       (userId) => `${USER_CACHE_PREFIX}${userId}`,
     );
-    await this.redisService.deleteManyKeys(cacheKeys);
-
+    if (cacheKeys.length > 0) {
+      await this.redisService.deleteManyKeys(cacheKeys);
+    }
     const savedDepartment = await this.departmentRepository.update(
       departmentId,
       updateDepartmentDto,
@@ -127,6 +135,26 @@ export class DepartmentsService {
   }
 
   async deleteDepartmentById(id: number): Promise<void> {
-    await this.departmentRepository.delete(id);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(User)
+        .set({ departmentId: null })
+        .where('departmentId = :id', { id })
+        .execute();
+
+      await queryRunner.manager.delete(Department, id);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

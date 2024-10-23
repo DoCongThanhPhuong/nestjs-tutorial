@@ -1,7 +1,13 @@
-import { Controller, Get, Param, Patch, Request } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Request } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { PaginationResponse } from 'src/common/dto';
 import { CurrentUserId } from 'src/decorators';
-import { UserResponseDto } from '../users/dto';
+import { QueryUserDto, UserResponseDto } from '../users/dto';
 import { UsersService } from '../users/users.service';
 import { DepartmentsService } from './departments.service';
 import { DepartmentResponseDto } from './dto';
@@ -15,27 +21,43 @@ export class DepartmentsController {
     private readonly usersService: UsersService,
   ) {}
 
+  @ApiOperation({ summary: 'List managed departments' })
   @ApiOkResponse({ type: [DepartmentResponseDto] })
   @Get()
   listDepartments(@Request() req) {
     return this.departmentsService.listDepartments(req.user);
   }
 
-  @ApiOkResponse({
-    type: [UserResponseDto],
-  })
-  @Get(':departmentId/users')
-  listDepartmentEmployees(
-    @Param('departmentId') departmentId: number,
-    @Request() req,
-  ): Promise<UserResponseDto[]> {
-    return this.usersService.listDepartmentEmployees(departmentId, req.user);
+  @ApiOperation({ summary: 'View department' })
+  @ApiOkResponse({ type: DepartmentResponseDto })
+  @Get(':id')
+  findOne(
+    @Param('id') id: number,
+    @CurrentUserId() userId: number,
+  ): Promise<DepartmentResponseDto> {
+    return this.departmentsService.findDepartmentById(id, userId);
   }
 
+  @ApiOperation({ summary: 'List department employees' })
   @ApiOkResponse({
-    type: [UserResponseDto],
+    type: PaginationResponse(UserResponseDto),
   })
-  @Get(':departmentId/users/:employeeId')
+  @Get(':departmentId/employees')
+  listDepartmentEmployees(
+    @Param('departmentId') departmentId: number,
+    @Body() query: QueryUserDto,
+    @Request() req,
+  ) {
+    return this.usersService.listDepartmentEmployees(
+      departmentId,
+      query,
+      req.user,
+    );
+  }
+
+  @ApiOperation({ summary: 'View department employee' })
+  @ApiOkResponse({ type: UserResponseDto })
+  @Get(':departmentId/employees/:employeeId')
   findOneEmployee(
     @Param('departmentId') departmentId: number,
     @Param('employeeId') employeeId: number,
@@ -48,7 +70,8 @@ export class DepartmentsController {
     );
   }
 
-  @Patch(':departmentId/users/:employeeId/promote-official')
+  @ApiOperation({ summary: 'Promote official' })
+  @Patch(':departmentId/employees/:employeeId/promote-official')
   promoteToOfficial(
     employeeId: number,
     @CurrentUserId() userId: number,

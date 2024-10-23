@@ -12,8 +12,10 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PaginationResponse, PaginationResponseDto } from 'src/common/dto';
 import { CurrentUserId } from 'src/decorators';
 import {
   QuerySubmissionDto,
@@ -29,6 +31,7 @@ import { SubmissionsService } from './submissions.service';
 export class SubmissionsController {
   constructor(private readonly submissionsService: SubmissionsService) {}
 
+  @ApiOperation({ summary: 'Submit form' })
   @ApiCreatedResponse({ type: SubmissionResponseDto })
   @Post()
   submit(
@@ -39,13 +42,14 @@ export class SubmissionsController {
     return this.submissionsService.submitForm(formId, submitFormDto, req.user);
   }
 
-  @ApiOkResponse({ type: [SubmissionResponseDto] })
+  @ApiOperation({ summary: 'List employee submissions' })
+  @ApiOkResponse({ type: PaginationResponse(SubmissionResponseDto) })
   @Get()
   listEmployeeSubmissions(
     @Param('formId') formId: number,
     @Query() query: QuerySubmissionDto,
     @CurrentUserId() userId: number,
-  ) {
+  ): Promise<PaginationResponseDto<SubmissionResponseDto>> {
     return this.submissionsService.listSubmissionsByFormId(
       formId,
       query,
@@ -53,12 +57,29 @@ export class SubmissionsController {
     );
   }
 
-  @ApiOkResponse({ type: [SubmissionResponseDto] })
+  @ApiOperation({ summary: 'View own submission' })
+  @ApiOkResponse({ type: SubmissionResponseDto })
   @Get('own')
   getOwn(@CurrentUserId() userId: number, @Param('formId') formId: number) {
     return this.submissionsService.getOwnFormSubmission(userId, formId);
   }
 
+  @ApiOperation({ summary: 'View a epmloyee submission' })
+  @ApiOkResponse({ type: SubmissionResponseDto })
+  @Get(':submissionId')
+  getOne(
+    @Param() submissionId: number,
+    @Param('formId') formId: number,
+    @CurrentUserId() userId,
+  ) {
+    return this.submissionsService.findOneSubmissionById(
+      submissionId,
+      formId,
+      userId,
+    );
+  }
+
+  @ApiOperation({ summary: 'Approve submission by id' })
   @ApiOkResponse()
   @Patch(':submissionId/approve')
   approveSubmissionById(
@@ -73,6 +94,7 @@ export class SubmissionsController {
     );
   }
 
+  @ApiOperation({ summary: 'Reject submission by id' })
   @ApiOkResponse()
   @Patch(':submissionId/reject')
   rejectSubmissionById(

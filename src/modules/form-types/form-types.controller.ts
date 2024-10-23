@@ -7,7 +7,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateFormTypeDto, UpdateFormTypeDto } from './dto';
 import { FormTypesService } from './form-types.service';
 
@@ -16,21 +16,19 @@ import { FormTypesService } from './form-types.service';
 export class FormTypesController {
   constructor(private readonly formTypesService: FormTypesService) {}
 
+  @ApiOperation({ summary: 'Create a form type' })
   @Post()
   create(@Body() createFormTypeDto: CreateFormTypeDto) {
     return this.formTypesService.create(createFormTypeDto);
   }
 
+  @ApiOperation({ summary: 'List all form types' })
   @Get()
   findAll() {
     return this.formTypesService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.formTypesService.findOne(id);
-  }
-
+  @ApiOperation({ summary: 'Update form type' })
   @Patch(':id')
   update(
     @Param('id') id: number,
@@ -39,6 +37,7 @@ export class FormTypesController {
     return this.formTypesService.update(id, updateFormTypeDto);
   }
 
+  @ApiOperation({ summary: 'Delete form type' })
   @Delete(':id')
   remove(@Param('id') id: number) {
     return this.formTypesService.remove(id);

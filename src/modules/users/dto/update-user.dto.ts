@@ -1,5 +1,12 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
+import { EUserStatus } from 'src/constants';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'John', type: String })
@@ -46,6 +53,11 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsEnum(EUserStatus)
+  status?: EUserStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsNotEmpty()
   roleId?: number;
 
@@ -53,6 +65,7 @@ export class UpdateUserDto {
   @IsOptional()
   departmentId?: number | null;
 }
+
 export class UpdateProfileDto extends PartialType(
-  OmitType(UpdateUserDto, ['isOffical', 'roleId', 'departmentId']),
+  OmitType(UpdateUserDto, ['isOffical', 'roleId', 'departmentId', 'status']),
 ) {}

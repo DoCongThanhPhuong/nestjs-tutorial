@@ -6,4 +6,8 @@ export class QueryUserDto extends QueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   departmentId?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  search?: string;
 }

@@ -12,10 +12,6 @@ export class PermissionResponseDto {
 
   @ApiProperty()
   @Expose()
-  description: string;
-
-  @ApiProperty()
-  @Expose()
   method: string;
 
   @ApiProperty()

@@ -17,9 +17,6 @@ export class Department {
   @Column({ name: 'name', unique: true, nullable: false })
   name: string;
 
-  @Column({ name: 'prefix', unique: true, nullable: false })
-  prefix: string;
-
   @OneToMany(() => User, (user) => user.department)
   users: User[];
 

@@ -6,8 +6,6 @@ export class DepartmentResponseDto {
   @Expose()
   name: string;
 
-  prefix: string;
-
   @ApiProperty({ description: 'ID of the manager' })
   @Expose()
   managerId: number;

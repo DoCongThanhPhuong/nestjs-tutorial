@@ -13,7 +13,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { PaginationResponseDto } from 'src/common/dto';
+import { PaginationResponse, PaginationResponseDto } from 'src/common/dto';
 import {
   FormItemDto,
   FormResponseDto,
@@ -30,7 +30,7 @@ export class AdminFormsController {
   constructor(private readonly formsService: FormsService) {}
 
   @ApiOperation({ summary: 'List all forms' })
-  @ApiOkResponse({ type: FormResponseDto })
+  @ApiOkResponse({ type: PaginationResponse(FormItemDto) })
   @Get()
   listForms(
     @Query() query: QueryFormDto,
@@ -48,7 +48,7 @@ export class AdminFormsController {
     return this.formsService.publishForm(formId, publishFormDto);
   }
 
-  @ApiOperation({ summary: 'Update form' })
+  @ApiOperation({ summary: 'Update a form' })
   @ApiOkResponse({ type: FormResponseDto })
   @Patch(':id')
   update(
@@ -58,7 +58,7 @@ export class AdminFormsController {
     return this.formsService.updateForm(formId, updateFormDto);
   }
 
-  @ApiOperation({ summary: 'Find one draft' })
+  @ApiOperation({ summary: 'View a draft' })
   @ApiOkResponse({ type: FormResponseDto })
   @Get('drafts/:id')
   findDraft(@Param('id') formId: number): Promise<FormResponseDto> {

@@ -8,9 +8,14 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUserId } from 'src/decorators';
-import { UpdateUserDto, UserResponseDto } from './dto';
+import { UpdateProfileDto, UserResponseDto } from './dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -19,6 +24,7 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
+  @ApiOperation({ summary: 'View profile' })
   @ApiOkResponse({
     type: UserResponseDto,
   })
@@ -27,6 +33,7 @@ export class UsersController {
     return req.user;
   }
 
+  @ApiOperation({ summary: 'Update profile' })
   @ApiOkResponse({
     type: UserResponseDto,
   })
@@ -35,8 +42,8 @@ export class UsersController {
   updateProfile(
     @CurrentUserId() userId: number,
     @UploadedFile() file: Express.Multer.File,
-    @Body() updateUserDto: UpdateUserDto,
+    @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<UserResponseDto> {
-    return this.usersService.updateProfileById(userId, updateUserDto, file);
+    return this.usersService.updateProfileById(userId, updateProfileDto, file);
   }
 }

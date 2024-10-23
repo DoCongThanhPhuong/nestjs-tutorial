@@ -7,11 +7,8 @@ export class Permission {
   @PrimaryGeneratedColumn({ name: 'id' })
   id: number;
 
-  @Column({ name: 'name', nullable: false })
+  @Column({ name: 'name', unique: true, nullable: false })
   name: string;
-
-  @Column({ name: 'description', nullable: false })
-  description: string;
 
   @Column({
     name: 'method',

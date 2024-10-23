@@ -7,11 +7,8 @@ export class FormType {
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
   id: number;
 
-  @Column({ name: 'name', nullable: false })
+  @Column({ name: 'name', unique: true, nullable: false })
   name: string;
-
-  @Column({ name: 'description', type: 'text', default: null })
-  description: string;
 
   @Column({
     name: 'scope',

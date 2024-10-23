@@ -148,11 +148,21 @@ export class SubmissionsService {
     submission.fieldValues = newFieldValues;
   }
 
-  async getOwnFormSubmission(userId: number, formId: number) {
-    const submission = await this.submissionRepository.findOne({
-      where: { employeeId: userId, formId },
-      relations: ['fieldValues', 'fieldValues.field'],
-    });
+  async getOwnFormSubmission(
+    userId: number,
+    formId: number,
+  ): Promise<SubmissionResponseDto> {
+    const submission = await this.submissionRepository
+      .createQueryBuilder('submission')
+      .leftJoinAndSelect('submission.fieldValues', 'fieldValues')
+      .leftJoinAndSelect('fieldValues.field', 'field')
+      .where('submission.employeeId = :userId', { userId })
+      .andWhere('submission.formId = :formId', { formId })
+      .getOne();
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
 
     const formattedSubmission = await this.processFieldValues(submission);
 
@@ -160,9 +170,9 @@ export class SubmissionsService {
   }
 
   async findOneSubmissionById(
-    formId: number,
     submissionId: number,
-    userId: number,
+    formId: number,
+    userId?: number,
   ) {
     const submission = await this.submissionRepository
       .createQueryBuilder('submission')
@@ -174,11 +184,12 @@ export class SubmissionsService {
 
     if (!submission) throw new NotFoundException('Submission not found');
 
-    if (submission.employeeId === userId || submission.managerId === userId) {
-      return submission;
+    if (userId && submission.managerId === userId) {
+      throw new BadRequestException('Unable to view this submission');
     }
 
-    throw new BadRequestException('Unable to view this submission');
+    const formattedSubmission = await this.processFieldValues(submission);
+    return plainToInstance(SubmissionResponseDto, formattedSubmission);
   }
 
   async approveSubmissionById(

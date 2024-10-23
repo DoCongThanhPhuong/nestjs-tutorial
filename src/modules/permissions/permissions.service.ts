@@ -1,9 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
+import { hasChildEntities } from 'src/utils/has-children';
 import { Repository } from 'typeorm';
-import { PermissionResponseDto, UpdatePermissionDto } from './dto';
-import { CreatePermissionDto } from './dto/create-permission.dto';
+import {
+  CreatePermissionDto,
+  PermissionResponseDto,
+  UpdatePermissionDto,
+} from './dto';
 import { Permission } from './entities/permission.entity';
 
 @Injectable()
@@ -29,7 +37,7 @@ export class PermissionsService {
   async createPermission(
     createPermissionDto: CreatePermissionDto,
   ): Promise<Permission> {
-    const { name, description, method, path } = createPermissionDto;
+    const { name, method, path } = createPermissionDto;
 
     const existingPermission = await this.permissionRepository.findOne({
       where: { name },
@@ -40,7 +48,6 @@ export class PermissionsService {
 
     const permission = this.permissionRepository.create({
       name,
-      description,
       method,
       path,
     });
@@ -49,31 +56,56 @@ export class PermissionsService {
   }
 
   async updatePermission(
-    id: number,
+    permId: number,
     updatePermissionDto: UpdatePermissionDto,
   ): Promise<PermissionResponseDto> {
     const permission = await this.permissionRepository.findOne({
-      where: { id },
+      where: { id: permId },
     });
-    const { name, description, method, path } = updatePermissionDto;
+    if (!permission) throw new NotFoundException('Permission not found');
 
-    const existingPermission = await this.permissionRepository.findOneBy({
-      name,
-    });
-    if (existingPermission && existingPermission.id !== id) {
-      throw new BadRequestException('Permission name already exists');
+    const isUnable = await hasChildEntities(
+      this.permissionRepository,
+      permId,
+      'rolePermissions',
+    );
+
+    if (isUnable) throw new BadRequestException('Unable to update permission');
+
+    const { name, method, path } = updatePermissionDto;
+
+    if (name) {
+      const existingPermission = await this.permissionRepository.findOne({
+        where: { name },
+      });
+
+      if (existingPermission && existingPermission.id !== permId) {
+        throw new BadRequestException('Permission name already exists');
+      }
     }
 
     permission.name = name || permission.name;
-    permission.description = description || permission.description;
     permission.method = method || permission.method;
     permission.path = path || permission.path;
+
     const savedPermission = await this.permissionRepository.save(permission);
+
     return plainToInstance(PermissionResponseDto, savedPermission);
   }
 
   async deletePermission(permId: number): Promise<void> {
-    await this.permissionRepository.findOne({ where: { id: permId } });
+    const perm = await this.permissionRepository.findOne({
+      where: { id: permId },
+    });
+    if (!perm) throw new NotFoundException('Permission not found');
+
+    const isUnable = await hasChildEntities(
+      this.permissionRepository,
+      permId,
+      'rolePermissions',
+    );
+
+    if (isUnable) throw new BadRequestException('Unable to delete permission');
     await this.permissionRepository.delete(permId);
   }
 }

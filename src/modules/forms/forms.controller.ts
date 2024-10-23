@@ -42,7 +42,23 @@ export class FormsController {
     return this.formsService.createForm(createFormDto, userId);
   }
 
-  @ApiOperation({ summary: 'Publish a form' })
+  @ApiOperation({ summary: 'Get all published forms' })
+  @ApiOkResponse({ type: PaginationResponse(FormItemDto) })
+  @Get()
+  listPublishedForms(
+    @Query() query: QueryFormDto,
+  ): Promise<PaginationResponseDto<FormItemDto>> {
+    return this.formsService.listPublishedForms(query);
+  }
+
+  @ApiOperation({ summary: 'View a published form' })
+  @ApiOkResponse({ type: FormResponseDto })
+  @Get(':id')
+  findOne(@Param('id') id: number): Promise<FormResponseDto> {
+    return this.formsService.findFormByIdWithCache(id);
+  }
+
+  @ApiOperation({ summary: 'Publish own form' })
   @ApiOkResponse({ type: FormResponseDto })
   @Patch(':id/publish')
   publish(
@@ -53,7 +69,7 @@ export class FormsController {
     return this.formsService.publishForm(formId, publishFormDto, userId);
   }
 
-  @ApiOperation({ summary: 'Update a form' })
+  @ApiOperation({ summary: 'Update own form' })
   @ApiOkResponse({ type: FormResponseDto })
   @Patch(':id')
   update(
@@ -64,26 +80,17 @@ export class FormsController {
     return this.formsService.updateForm(formId, updateFormDto, userId);
   }
 
-  @ApiOperation({ summary: 'Get all published forms' })
-  @ApiOkResponse({ type: PaginationResponse(FormResponseDto) })
-  @Get()
-  listPublishedForms(
-    @Query() query: QueryFormDto,
-  ): Promise<PaginationResponseDto<FormItemDto>> {
-    return this.formsService.listPublishedForms(query);
-  }
-
   @ApiOperation({ summary: 'Get own forms' })
   @ApiOkResponse({ type: FormResponseDto })
   @Get('my-forms')
-  listForms(
+  listOwn(
     @CurrentUserId() userId: number,
     @Query() query: QueryFormDto,
   ): Promise<PaginationResponseDto<FormItemDto>> {
     return this.formsService.listForms(query, userId);
   }
 
-  @ApiOperation({ summary: 'Get drafts' })
+  @ApiOperation({ summary: 'View a draft' })
   @ApiOkResponse({ type: FormResponseDto })
   @Get('drafts/:id')
   findDraft(
@@ -91,13 +98,6 @@ export class FormsController {
     @CurrentUserId() userId: number,
   ): Promise<FormResponseDto> {
     return this.formsService.findDraftById(formId, userId);
-  }
-
-  @ApiOperation({ summary: 'Get form by id' })
-  @ApiOkResponse({ type: FormResponseDto })
-  @Get(':id')
-  findOne(@Param('id') id: number): Promise<FormResponseDto> {
-    return this.formsService.findFormByIdWithCache(id);
   }
 
   @ApiOperation({ summary: 'Delete form by id' })

@@ -1,7 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { UpdatePermissionDto } from './dto';
-import { CreatePermissionDto } from './dto/create-permission.dto';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CreatePermissionDto, UpdatePermissionDto } from './dto';
 import { PermissionsService } from './permissions.service';
 
 @ApiTags('permissions')
@@ -10,17 +17,20 @@ import { PermissionsService } from './permissions.service';
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 
+  @ApiOperation({ summary: 'List all permissions' })
   @Get()
   findAll() {
     return this.permissionsService.listAllPermissions();
   }
 
+  @ApiOperation({ summary: 'Create new permission' })
   @Post()
   create(@Body() createPermissionDto: CreatePermissionDto) {
     return this.permissionsService.createPermission(createPermissionDto);
   }
 
-  @Post(':id')
+  @ApiOperation({ summary: 'Update permission by id' })
+  @Patch(':id')
   update(
     @Param() id: number,
     @Body() updatePermissionDto: UpdatePermissionDto,
@@ -28,6 +38,7 @@ export class PermissionsController {
     return this.permissionsService.updatePermission(id, updatePermissionDto);
   }
 
+  @ApiOperation({ summary: 'Delete permission by id' })
   @Delete(':id')
   delete(@Param() id: number) {
     return this.permissionsService.deletePermission(id);

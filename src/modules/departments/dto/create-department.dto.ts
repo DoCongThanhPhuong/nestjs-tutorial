@@ -6,9 +6,4 @@ export class CreateDepartmentDto {
   @IsNotEmpty()
   @IsString()
   name: string;
-
-  @ApiProperty({ description: 'Prefix for the department' })
-  @IsNotEmpty()
-  @IsString()
-  prefix: string;
 }
