@@ -5,15 +5,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
+import { ROLE_CACHE_PREFIX } from 'src/constants';
 import { hasChildEntities } from 'src/utils/has-children';
 import { DataSource, Repository } from 'typeorm';
+import { PermissionResponseDto } from '../permissions/dto';
 import { PermissionsService } from '../permissions/permissions.service';
+import { RedisService } from '../redis/redis.service';
 import { CreateRoleDto, RoleResponseDto, UpdateRoleDto } from './dto';
 import { RolePermission } from './entities/role-permisssion.entity';
 import { Role } from './entities/role.entity';
-import { PermissionResponseDto } from '../permissions/dto';
-import { USER_CACHE_PREFIX } from 'src/constants';
-import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class RolesService {
@@ -76,6 +76,7 @@ export class RolesService {
       }));
 
       await queryRunner.manager.save(RolePermission, rolePermissions);
+      await this.redisService.deleteKey(`${ROLE_CACHE_PREFIX}${savedRole.id}`);
       await queryRunner.commitTransaction();
 
       return plainToInstance(RoleResponseDto, savedRole);
@@ -87,15 +88,26 @@ export class RolesService {
     }
   }
 
-  async findRoleById(id: number): Promise<RoleResponseDto> {
-    const role = await this.roleRepository.findOne({ where: { id } });
-    const permissions = await this.listPermissionsOfRole(id);
-    if (!role) throw new NotFoundException('Role not found');
+  async findRoleByIdWithCache(roleId: number): Promise<RoleResponseDto> {
+    const cacheKey = `${ROLE_CACHE_PREFIX}${roleId}`;
+    const cacheValue = await this.redisService.getKey(cacheKey);
+    if (cacheValue) return JSON.parse(cacheValue);
+    const role = await this.roleRepository.findOne({ where: { id: roleId } });
+    const permissions = await this.listPermissionsOfRole(roleId);
+    const roleResponse = role
+      ? plainToInstance(RoleResponseDto, { ...role, permissions })
+      : null;
 
-    return plainToInstance(RoleResponseDto, { ...role, permissions });
+    await this.redisService.setWithExpiration(
+      cacheKey,
+      JSON.stringify(roleResponse),
+      28800,
+    );
+
+    return roleResponse;
   }
 
-  async listAllRoles() {
+  async listAllRoles(): Promise<RoleResponseDto[]> {
     const roles = await this.roleRepository.find();
     return plainToInstance(RoleResponseDto, roles);
   }
@@ -112,7 +124,7 @@ export class RolesService {
       const { name, description, permissionIds = [] } = updateRoleDto;
       const role = await queryRunner.manager.findOne(Role, {
         where: { id: roleId },
-        relations: ['rolePermissions', 'users'],
+        relations: ['rolePermissions'],
       });
       if (!role) throw new NotFoundException('Role not found');
 
@@ -142,14 +154,9 @@ export class RolesService {
           await queryRunner.manager.save(RolePermission, newRolePermissions);
         }
       }
-      const cacheKeys = role.users.map(
-        (user) => `${USER_CACHE_PREFIX}${user.id}`,
-      );
-      if (cacheKeys.length > 0) {
-        await this.redisService.deleteManyKeys(cacheKeys);
-      }
+      await this.redisService.deleteKey(`${ROLE_CACHE_PREFIX}${roleId}`);
       await queryRunner.commitTransaction();
-      const savedRole = await this.findRoleById(roleId);
+      const savedRole = await this.findRoleByIdWithCache(roleId);
       return plainToInstance(RoleResponseDto, savedRole);
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -160,7 +167,7 @@ export class RolesService {
   }
 
   async deleteRole(roleId: number): Promise<void> {
-    await this.findRoleById(roleId);
+    await this.findRoleByIdWithCache(roleId);
 
     const isUnable = await hasChildEntities(
       this.roleRepository,
@@ -169,6 +176,7 @@ export class RolesService {
     );
 
     if (isUnable) throw new BadRequestException('Unable to delete role');
+    await this.redisService.deleteKey(`${ROLE_CACHE_PREFIX}${roleId}`);
     await this.roleRepository.delete(roleId);
   }
 }

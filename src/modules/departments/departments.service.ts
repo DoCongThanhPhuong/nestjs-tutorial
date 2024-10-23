@@ -10,7 +10,6 @@ import { plainToInstance } from 'class-transformer';
 import { EUserStatus, USER_CACHE_PREFIX } from 'src/constants';
 import { DataSource, Repository } from 'typeorm';
 import { RedisService } from '../redis/redis.service';
-import { UserResponseDto } from '../users/dto';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import {
@@ -39,22 +38,16 @@ export class DepartmentsService {
     return department ? true : false;
   }
 
-  async checkExistsName(name: string): Promise<boolean> {
-    const department = await this.departmentRepository.findOne({
-      where: { name },
-      select: ['id'],
-    });
-    return department ? true : false;
-  }
-
   async createDepartment(
     createDepartmentDto: CreateDepartmentDto,
   ): Promise<DepartmentResponseDto> {
     const { name } = createDepartmentDto;
-    const department = await this.checkExistsName(name);
-    if (department) {
-      throw new BadRequestException('Name or prefix already exists');
-    }
+    const department = await this.departmentRepository.findOne({
+      where: { name },
+      select: ['id'],
+    });
+    if (department) throw new BadRequestException('Name already exists');
+
     const newDepartment = this.departmentRepository.create(createDepartmentDto);
     const savedDepartment = await this.departmentRepository.save(newDepartment);
     return plainToInstance(DepartmentResponseDto, savedDepartment);
@@ -65,9 +58,13 @@ export class DepartmentsService {
     return plainToInstance(DepartmentResponseDto, departments);
   }
 
-  async listDepartments(user: UserResponseDto) {
-    if (user.departmentsManaged?.length > 0) return user.departmentsManaged;
-    return [user.department];
+  async listManagedDepartments(
+    userId: number,
+  ): Promise<DepartmentResponseDto[]> {
+    const departments = await this.departmentRepository.find({
+      where: [{ directorId: userId }, { managerId: userId }],
+    });
+    return plainToInstance(DepartmentResponseDto, departments);
   }
 
   async findDepartmentById(

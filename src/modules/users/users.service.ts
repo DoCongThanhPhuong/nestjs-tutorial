@@ -41,19 +41,19 @@ export class UsersService {
     private readonly redisService: RedisService,
   ) {}
 
-  async canSubmitForm(
-    user: UserResponseDto,
-    scope: EFormTypeScope,
-  ): Promise<boolean> {
+  canSubmitForm(user: UserResponseDto, scope: EFormTypeScope): boolean {
     const { isOfficial } = user;
 
-    if (scope === EFormTypeScope.PROBATION && !isOfficial) return true;
-
-    if (scope === EFormTypeScope.PERMANENT && isOfficial) return true;
-
-    if (scope === EFormTypeScope.ALL) return true;
-
-    return false;
+    switch (scope) {
+      case EFormTypeScope.PROBATION:
+        return !isOfficial;
+      case EFormTypeScope.PERMANENT:
+        return isOfficial;
+      case EFormTypeScope.ALL:
+        return true;
+      default:
+        return false;
+    }
   }
 
   async getAllUserIds(isOfficial?: boolean) {
@@ -76,19 +76,22 @@ export class UsersService {
     select: (keyof User)[] = [],
   ): Promise<UserResponseDto> {
     const options: FindOneOptions<User> = { where, relations };
-
-    if (select.length > 0) {
-      options.select = select;
-    }
+    if (select.length > 0) options.select = select;
 
     const foundUser = await this.userRepository.findOne(options);
-
     if (!foundUser) throw new NotFoundException('User not found');
+
+    if (foundUser.avatar) {
+      foundUser.avatar = await this.uploadService.getFileUrl(foundUser.avatar);
+    }
 
     return plainToInstance(UserResponseDto, foundUser);
   }
 
-  async changePassword(changePasswordDto: ChangePasswordDto, userId: number) {
+  async changePassword(
+    changePasswordDto: ChangePasswordDto,
+    userId: number,
+  ): Promise<void> {
     const { password, oldPassword } = changePasswordDto;
     const foundUser = await this.findOneUserBy({
       id: userId,
@@ -98,12 +101,12 @@ export class UsersService {
       oldPassword,
       foundUser.password,
     );
-    if (!isValidPassword)
+    if (!isValidPassword) {
       throw new BadRequestException('Old password is incorrect');
-    const updatedUser = await this.updateProfileById(userId, {
+    }
+    await this.adminUpdateUserById(userId, {
       password,
     });
-    return plainToInstance(UserResponseDto, updatedUser);
   }
 
   async findEmailToSendNotifications(
@@ -132,13 +135,19 @@ export class UsersService {
   async listAllUsers(
     query: QueryUserDto,
   ): Promise<PaginationResponseDto<UserItemDto>> {
-    const { page, size, departmentId, search } = query;
+    const { page, size, departmentId, search, status } = query;
 
     const queryBuilder = this.userRepository.createQueryBuilder('user');
 
     if (departmentId) {
       queryBuilder.andWhere('user.departmentId = :departmentId', {
         departmentId,
+      });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('user.status = :status', {
+        status,
       });
     }
 
@@ -150,7 +159,7 @@ export class UsersService {
     }
 
     const [users, total] = await queryBuilder
-      .select(['user.code', 'user.firstname', 'user.lastname', 'user.email'])
+      .select(['user.id', 'user.code', 'user.firstname', 'user.lastname'])
       .skip((page - 1) * size)
       .take(size)
       .getManyAndCount();
@@ -192,9 +201,6 @@ export class UsersService {
   ): Promise<UserResponseDto> {
     const foundUser = await this.findUserByIdWithCache(id);
     if (!foundUser) throw new NotFoundException('User not found');
-    if (data.password) {
-      data.password = await hashPassword(data.password);
-    }
     if (file) {
       if (foundUser.avatar) {
         await this.uploadService.deleteFile(foundUser.avatar);
@@ -266,6 +272,10 @@ export class UsersService {
       departmentId,
     });
 
+    queryBuilder.andWhere('user.status = :status', {
+      status: EUserStatus.ACTIVE,
+    });
+
     if (search) {
       queryBuilder.andWhere(
         '(user.firstname LIKE :search OR user.lastname LIKE :search)',
@@ -274,7 +284,7 @@ export class UsersService {
     }
 
     const [users, total] = await queryBuilder
-      .select(['user.code', 'user.firstname', 'user.lastname', 'user.email'])
+      .select(['user.id', 'user.code', 'user.firstname', 'user.lastname'])
       .skip((page - 1) * size)
       .take(size)
       .getManyAndCount();
@@ -290,18 +300,19 @@ export class UsersService {
 
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['department', 'managedDepartment', 'departmentsManaged'],
+      relations: ['department'],
     });
-    const role = await this.rolesService.findRoleById(user.roleId);
 
-    const userResponse = user
-      ? plainToInstance(UserResponseDto, { ...user, role })
-      : null;
+    if (user && user.avatar) {
+      user.avatar = await this.uploadService.getFileUrl(user.avatar);
+    }
+
+    const userResponse = user ? plainToInstance(UserResponseDto, user) : null;
 
     await this.redisService.setWithExpiration(
       cacheKey,
       JSON.stringify(userResponse),
-      86400,
+      28800,
     );
 
     return userResponse;

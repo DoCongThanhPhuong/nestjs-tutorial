@@ -4,7 +4,7 @@ import { IsEmail } from 'class-validator';
 import { lowerCaseTransformer } from 'src/utils/transformers';
 
 export class AuthForgotPasswordDto {
-  @ApiProperty({ example: 'test1@example.com', type: String })
+  @ApiProperty({ example: 'bido23082003@gmail.com', type: String })
   @Transform(lowerCaseTransformer)
   @IsEmail()
   email: string;

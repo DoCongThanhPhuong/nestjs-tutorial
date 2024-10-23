@@ -67,5 +67,11 @@ export class UpdateUserDto {
 }
 
 export class UpdateProfileDto extends PartialType(
-  OmitType(UpdateUserDto, ['isOffical', 'roleId', 'departmentId', 'status']),
+  OmitType(UpdateUserDto, [
+    'isOffical',
+    'roleId',
+    'departmentId',
+    'status',
+    'password',
+  ]),
 ) {}

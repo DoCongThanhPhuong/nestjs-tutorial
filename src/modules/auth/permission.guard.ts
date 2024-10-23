@@ -5,6 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { EMethod } from 'src/constants';
+import { RolesService } from '../roles/roles.service';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -15,7 +16,7 @@ export class PermissionsGuard implements CanActivate {
     { path: '/auth/refresh-token', method: EMethod.POST },
   ];
 
-  constructor() {}
+  constructor(private readonly roleService: RolesService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -27,8 +28,9 @@ export class PermissionsGuard implements CanActivate {
 
     const user = request.user;
     if (!user) throw new ForbiddenException('Unauthorized');
+    const userRole = await this.roleService.findRoleByIdWithCache(user.roleId);
 
-    const hasPermission = user.role.permissions.some(
+    const hasPermission = userRole.permissions.some(
       (permission) =>
         permission.method === method && permission.path === apiPath,
     );

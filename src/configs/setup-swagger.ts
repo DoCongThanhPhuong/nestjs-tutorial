@@ -9,7 +9,15 @@ export function setupSwagger(app: INestApplication): void {
     .setTitle('HRM API')
     .setDescription('The API documentation for HRM')
     .setVersion(apiVersion)
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('documentation', app, document);
+  SwaggerModule.setup('documentation', app, document, {
+    swaggerOptions: {
+      apisSorter: 'alpha',
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+      persistAuthorization: true,
+    },
+  });
 }

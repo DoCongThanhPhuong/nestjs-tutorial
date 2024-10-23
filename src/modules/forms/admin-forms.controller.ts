@@ -23,7 +23,7 @@ import {
 } from './dto';
 import { FormsService } from './forms.service';
 
-@ApiTags('admin/forms')
+@ApiTags('Admin/Forms')
 @ApiBearerAuth()
 @Controller('admin/forms')
 export class AdminFormsController {

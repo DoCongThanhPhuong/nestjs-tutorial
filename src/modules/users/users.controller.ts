@@ -18,7 +18,7 @@ import { CurrentUserId } from 'src/decorators';
 import { UpdateProfileDto, UserResponseDto } from './dto';
 import { UsersService } from './users.service';
 
-@ApiTags('users')
+@ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
 export class UsersController {

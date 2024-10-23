@@ -8,9 +8,10 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { DeleteFileDto } from './dto/delete-file.dto';
 import { UploadService } from './upload.service';
 
-@ApiTags('upload')
+@ApiTags('Upload')
 @ApiBearerAuth()
 @Controller('upload')
 export class UploadController {
@@ -26,7 +27,7 @@ export class UploadController {
 
   @ApiOperation({ summary: 'Delete an uploaded file' })
   @Delete()
-  async deleteFile(@Body('fileKey') fileKey: string): Promise<void> {
-    await this.uploadService.deleteFile(fileKey);
+  async deleteFile(@Body() deleteFileDto: DeleteFileDto): Promise<void> {
+    await this.uploadService.deleteFile(deleteFileDto.fileName);
   }
 }

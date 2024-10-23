@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
+import { ESubmissionStatus } from 'src/constants';
 import { FieldResponseDto } from 'src/modules/fields/dto';
+import { UserItemDto } from 'src/modules/users/dto';
 
 export class FieldValueDto {
   @ApiProperty()
@@ -54,4 +56,19 @@ export class SubmissionResponseDto {
   @Expose()
   @Type(() => FieldValueDto)
   fieldValues: FieldValueDto[];
+}
+
+export class SubmissionItemDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  submittedAt: Date;
+
+  @Expose()
+  status: ESubmissionStatus;
+
+  @Expose()
+  @Type(() => UserItemDto)
+  employee: UserItemDto;
 }

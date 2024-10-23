@@ -55,7 +55,7 @@ export class UploadService {
 
     const getObjectCommand = new GetObjectCommand(getObjectParams);
     const signedUrl = await getSignedUrl(this.s3Client, getObjectCommand, {
-      expiresIn: 8 * 3600,
+      expiresIn: 28800,
     });
 
     return signedUrl;

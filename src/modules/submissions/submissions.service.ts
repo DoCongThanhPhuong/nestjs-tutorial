@@ -8,10 +8,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { PaginationResponseDto } from 'src/common/dto';
-import { EFormTypeScope, ESubmissionStatus } from 'src/constants';
+import { EFieldType, EFormTypeScope, ESubmissionStatus } from 'src/constants';
 import { paginateData } from 'src/utils/paginate-data';
 import { validateFieldValue } from 'src/utils/validate-field-value';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { FieldResponseDto } from '../fields/dto';
 import { FieldsService } from '../fields/fields.service';
 import { FormsService } from '../forms/forms.service';
@@ -22,6 +22,7 @@ import { UsersService } from '../users/users.service';
 import {
   QuerySubmissionDto,
   RejectSubmissionDto,
+  SubmissionItemDto,
   SubmissionResponseDto,
   SubmitFormDto,
 } from './dto';
@@ -105,7 +106,6 @@ export class SubmissionsService {
         employee: { id: user.id },
         form: { id: formId },
       },
-      relations: ['fieldValues'],
     });
 
     if (submission) {
@@ -117,7 +117,7 @@ export class SubmissionsService {
       }
 
       submission.rejectionReason = null;
-      await this.fieldValueRepository.remove(submission.fieldValues);
+      await this.deleteFieldValues(submission.id);
     } else {
       const directManagerId =
         user.id === user.department?.managerId
@@ -142,10 +142,7 @@ export class SubmissionsService {
         value: fieldValue.value,
       }),
     );
-
     await this.fieldValueRepository.save(newFieldValues);
-
-    submission.fieldValues = newFieldValues;
   }
 
   async getOwnFormSubmission(
@@ -316,20 +313,37 @@ export class SubmissionsService {
     formId: number,
     query: QuerySubmissionDto,
     managerId?: number,
-  ): Promise<PaginationResponseDto<SubmissionResponseDto>> {
+  ): Promise<PaginationResponseDto<SubmissionItemDto>> {
     const { page, size, status } = query;
-    const where: FindOptionsWhere<Submission> = { formId };
-    if (managerId) where.managerId = managerId;
-    if (status) where.status = status;
+    const queryBuilder = this.submissionRepository
+      .createQueryBuilder('submission')
+      .leftJoinAndSelect('submission.employee', 'employee')
+      .select([
+        'submission.id',
+        'submission.submittedAt',
+        'submission.status',
+        'employee.id',
+        'employee.firstname',
+        'employee.lastname',
+        'employee.code',
+      ])
+      .where('submission.formId = :formId', { formId });
 
-    const [users, total] = await this.submissionRepository.findAndCount({
-      skip: (page - 1) * size,
-      take: size,
-      where: where,
-    });
+    if (managerId) {
+      queryBuilder.andWhere('submission.managerId = :managerId', { managerId });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('submission.status = :status', { status });
+    }
+
+    const [submissions, total] = await queryBuilder
+      .skip((page - 1) * size)
+      .take(size)
+      .getManyAndCount();
 
     return paginateData(
-      plainToInstance(SubmissionResponseDto, users),
+      plainToInstance(SubmissionItemDto, submissions),
       page,
       size,
       total,
@@ -340,7 +354,7 @@ export class SubmissionsService {
     submission: SubmissionResponseDto,
   ): Promise<SubmissionResponseDto> {
     for (const fieldValue of submission.fieldValues) {
-      if (fieldValue.field.type === 'upload') {
+      if (fieldValue.field.type === EFieldType.UPLOAD) {
         const url = await this.uploadService.getFileUrl(fieldValue.value);
 
         fieldValue.value = url;
@@ -348,5 +362,19 @@ export class SubmissionsService {
     }
 
     return submission;
+  }
+
+  async deleteFieldValues(submissionId: number) {
+    const fieldValues = await this.fieldValueRepository.find({
+      where: { submissionId },
+      relations: ['field'],
+    });
+
+    for (const fieldValue of fieldValues) {
+      if (fieldValue.field.type === EFieldType.UPLOAD) {
+        await this.uploadService.deleteFile(fieldValue.value);
+      }
+    }
+    await this.fieldValueRepository.remove(fieldValues);
   }
 }

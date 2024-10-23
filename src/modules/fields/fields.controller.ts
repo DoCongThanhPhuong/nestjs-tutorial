@@ -4,7 +4,7 @@ import { CurrentUserId } from 'src/decorators';
 import { CreateFieldDto, FieldResponseDto, UpdateFieldDto } from './dto';
 import { FieldsService } from './fields.service';
 
-@ApiTags('forms/:formId/fields')
+@ApiTags('Fields')
 @Controller('forms/:formId/fields')
 export class FieldsController {
   constructor(private readonly fieldsService: FieldsService) {}

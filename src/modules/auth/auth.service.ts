@@ -10,7 +10,6 @@ import bcrypt from 'bcrypt';
 import { AllConfigType } from 'src/configs/config.type';
 import { EUserStatus } from 'src/constants';
 import { convertTimeStringToSeconds } from 'src/utils/convert-time';
-import { hashPassword } from 'src/utils/hash-password';
 import { MailService } from '../mail/mail.service';
 import { RedisService } from '../redis/redis.service';
 import { UsersService } from '../users/users.service';
@@ -107,10 +106,7 @@ export class AuthService {
       if (!key)
         throw new BadRequestException('Password have just been changed');
 
-      const newPassword = await hashPassword(password);
-      await this.usersService.updateProfileById(userId, {
-        password: newPassword,
-      });
+      await this.usersService.adminUpdateUserById(userId, { password });
       await this.redisService.deleteKey(`forgot-password-user${userId}`);
     } catch (error) {
       throw error;

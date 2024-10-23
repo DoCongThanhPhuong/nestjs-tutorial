@@ -12,7 +12,7 @@ import { UsersService } from '../users/users.service';
 import { DepartmentsService } from './departments.service';
 import { DepartmentResponseDto } from './dto';
 
-@ApiTags('departments')
+@ApiTags('Departments')
 @ApiBearerAuth()
 @Controller('departments')
 export class DepartmentsController {
@@ -24,8 +24,8 @@ export class DepartmentsController {
   @ApiOperation({ summary: 'List managed departments' })
   @ApiOkResponse({ type: [DepartmentResponseDto] })
   @Get()
-  listDepartments(@Request() req) {
-    return this.departmentsService.listDepartments(req.user);
+  listManagedDepartments(@CurrentUserId() userId) {
+    return this.departmentsService.listManagedDepartments(userId);
   }
 
   @ApiOperation({ summary: 'View department' })

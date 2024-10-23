@@ -26,7 +26,7 @@ import {
 } from './dto';
 import { FormsService } from './forms.service';
 
-@ApiTags('forms')
+@ApiTags('Forms')
 @ApiBearerAuth()
 @Controller('forms')
 export class FormsController {

@@ -58,7 +58,7 @@ export class User {
   @Column({ name: 'job_title', default: null })
   jobTitle: string;
 
-  @Column({ name: 'is_offical', default: false })
+  @Column({ name: 'is_official', default: false })
   isOfficial: boolean;
 
   @Column({ name: 'department_id', default: null })

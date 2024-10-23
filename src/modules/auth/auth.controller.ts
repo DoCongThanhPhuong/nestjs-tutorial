@@ -1,5 +1,8 @@
 import { Body, Controller, Patch, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUserId } from 'src/decorators';
+import { ChangePasswordDto } from '../users/dto';
+import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import {
   AuthEmailLoginDto,
@@ -10,10 +13,13 @@ import {
   RefreshTokenDto,
 } from './dto';
 
-@ApiTags('auth')
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UsersService,
+  ) {}
 
   @ApiOperation({ summary: 'Login' })
   @ApiOkResponse({
@@ -39,6 +45,15 @@ export class AuthController {
       resetPasswordDto.hash,
       resetPasswordDto.password,
     );
+  }
+
+  @ApiOperation({ summary: 'Change password' })
+  @Patch('change-password')
+  changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @CurrentUserId() userId,
+  ): Promise<void> {
+    return this.userService.changePassword(changePasswordDto, userId);
   }
 
   @ApiOperation({ summary: 'Refresh token' })

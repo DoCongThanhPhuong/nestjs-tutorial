@@ -53,7 +53,7 @@ export class FormsService {
     });
 
     const newForm = await this.formRepository.save(form);
-
+    await this.redisService.deleteKey(`${FORM_CACHE_PREFIX}${newForm.id}`);
     return plainToInstance(FormResponseDto, newForm);
   }
 
@@ -139,7 +139,7 @@ export class FormsService {
     await this.redisService.setWithExpiration(
       cacheKey,
       JSON.stringify(formResponse),
-      300,
+      28800,
     );
 
     return formResponse;

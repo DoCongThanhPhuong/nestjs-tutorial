@@ -36,7 +36,7 @@ export class PermissionsService {
 
   async createPermission(
     createPermissionDto: CreatePermissionDto,
-  ): Promise<Permission> {
+  ): Promise<PermissionResponseDto> {
     const { name, method, path } = createPermissionDto;
 
     const existingPermission = await this.permissionRepository.findOne({
@@ -52,7 +52,8 @@ export class PermissionsService {
       path,
     });
 
-    return await this.permissionRepository.save(permission);
+    const savedPermission = await this.permissionRepository.save(permission);
+    return plainToInstance(PermissionResponseDto, savedPermission);
   }
 
   async updatePermission(

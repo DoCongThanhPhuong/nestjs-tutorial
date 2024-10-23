@@ -4,13 +4,13 @@ import { IsEmail, IsNotEmpty } from 'class-validator';
 import { lowerCaseTransformer } from 'src/utils/transformers';
 
 export class AuthEmailLoginDto {
-  @ApiProperty({ example: 'test1@example.com', type: String })
+  @ApiProperty({ example: 'admin@gmail.com', type: String })
   @Transform(lowerCaseTransformer)
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: '123456', type: String })
   @IsNotEmpty()
   password: string;
 }

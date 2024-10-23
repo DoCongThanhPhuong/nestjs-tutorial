@@ -26,7 +26,7 @@ import {
 } from './dto';
 import { UsersService } from './users.service';
 
-@ApiTags('admin/users')
+@ApiTags('Admin/Users')
 @ApiBearerAuth()
 @Controller('admin/users')
 export class AdminUsersController {

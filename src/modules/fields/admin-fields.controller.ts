@@ -3,7 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateFieldDto, FieldResponseDto, UpdateFieldDto } from './dto';
 import { FieldsService } from './fields.service';
 
-@ApiTags('admin/forms/:formId/fields')
+@ApiTags('Admin/Fields')
 @Controller('admin/forms/:formId/fields')
 export class AdminFieldsController {
   constructor(private readonly fieldsService: FieldsService) {}

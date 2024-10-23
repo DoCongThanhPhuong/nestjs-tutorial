@@ -13,14 +13,14 @@ import {
 } from './dto';
 import { SubmissionsService } from './submissions.service';
 
-@ApiTags('admin/forms/:formId/submissions')
+@ApiTags('Admin/Submissions')
 @ApiBearerAuth()
 @Controller('admin/forms/:formId/submissions')
 export class AdminSubmissionsController {
   constructor(private readonly submissionsService: SubmissionsService) {}
 
   @ApiOperation({ summary: 'List all submissions' })
-  @ApiOkResponse({ type: [SubmissionResponseDto] })
+  @ApiOkResponse({ type: PaginationResponse(SubmissionResponseDto) })
   @Get()
   listAllSubmissions(
     @Param('formId') formId: number,
@@ -30,7 +30,7 @@ export class AdminSubmissionsController {
   }
 
   @ApiOperation({ summary: 'Report form submissions' })
-  @ApiOkResponse({ type: PaginationResponse(SubmissionResponseDto) })
+  @ApiOkResponse()
   @Get('report')
   reportFormSubmissions(@Param('formId') formId: number) {
     return this.submissionsService.reportFormSubmissions(formId);
@@ -44,7 +44,7 @@ export class AdminSubmissionsController {
   }
 
   @ApiOperation({ summary: 'Approve submission by id' })
-  @ApiOkResponse({})
+  @ApiOkResponse()
   @Patch(':submissionId/approve')
   approveSubmissionById(
     @Param('formId') formId: number,
@@ -54,7 +54,7 @@ export class AdminSubmissionsController {
   }
 
   @ApiOperation({ summary: 'Reject submission by id' })
-  @ApiOkResponse({})
+  @ApiOkResponse()
   @Patch(':submissionId/reject')
   rejectSubmissionById(
     @Param('formId') formId: number,

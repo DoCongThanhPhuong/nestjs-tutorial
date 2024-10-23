@@ -20,12 +20,13 @@ import { CurrentUserId } from 'src/decorators';
 import {
   QuerySubmissionDto,
   RejectSubmissionDto,
+  SubmissionItemDto,
   SubmissionResponseDto,
   SubmitFormDto,
 } from './dto';
 import { SubmissionsService } from './submissions.service';
 
-@ApiTags('forms/:formId/submissions')
+@ApiTags('Submissions')
 @ApiBearerAuth()
 @Controller('forms/:formId/submissions')
 export class SubmissionsController {
@@ -43,13 +44,13 @@ export class SubmissionsController {
   }
 
   @ApiOperation({ summary: 'List employee submissions' })
-  @ApiOkResponse({ type: PaginationResponse(SubmissionResponseDto) })
+  @ApiOkResponse({ type: PaginationResponse(SubmissionItemDto) })
   @Get()
   listEmployeeSubmissions(
     @Param('formId') formId: number,
     @Query() query: QuerySubmissionDto,
     @CurrentUserId() userId: number,
-  ): Promise<PaginationResponseDto<SubmissionResponseDto>> {
+  ): Promise<PaginationResponseDto<SubmissionItemDto>> {
     return this.submissionsService.listSubmissionsByFormId(
       formId,
       query,

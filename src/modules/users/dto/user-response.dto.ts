@@ -1,16 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { DepartmentResponseDto } from 'src/modules/departments/dto';
-import { RoleResponseDto } from 'src/modules/roles/dto';
 
 export class UserResponseDto {
   @ApiProperty()
   @Expose()
   id: number;
-
-  @ApiProperty()
-  @Expose()
-  departmentId: number;
 
   @ApiProperty()
   @Expose()
@@ -66,22 +61,23 @@ export class UserResponseDto {
 
   @ApiProperty()
   @Expose()
+  roleId: number;
+
+  @ApiProperty()
+  @Expose()
   @Type(() => DepartmentResponseDto)
   department: DepartmentResponseDto;
 
-  @Type(() => DepartmentResponseDto)
-  departmentsManaged: DepartmentResponseDto[];
-
-  @Type(() => DepartmentResponseDto)
-  managedDepartment: DepartmentResponseDto;
-
-  @Type(() => RoleResponseDto)
-  role: RoleResponseDto;
+  departmentId: number;
 
   password: string;
 }
 
 export class UserItemDto {
+  @ApiProperty()
+  @Expose()
+  id: number;
+
   @ApiProperty()
   @Expose()
   code: string;
@@ -93,8 +89,4 @@ export class UserItemDto {
   @ApiProperty()
   @Expose()
   lastname: string;
-
-  @ApiProperty()
-  @Expose()
-  email: string;
 }

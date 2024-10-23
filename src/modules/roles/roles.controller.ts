@@ -11,7 +11,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateRoleDto } from './dto';
 import { RolesService } from './roles.service';
 
-@ApiTags('roles')
+@ApiTags('Roles')
 @ApiBearerAuth()
 @Controller('roles')
 export class RolesController {
@@ -32,7 +32,7 @@ export class RolesController {
   @ApiOperation({ summary: 'View role details' })
   @Get(':id')
   findOne(@Param('id') id: number) {
-    return this.rolesService.findRoleById(id);
+    return this.rolesService.findRoleByIdWithCache(id);
   }
 
   @ApiOperation({ summary: 'Update role by id' })

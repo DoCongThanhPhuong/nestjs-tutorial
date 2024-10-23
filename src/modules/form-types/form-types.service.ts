@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { plainToInstance } from 'class-transformer';
 import { hasChildEntities } from 'src/utils/has-children';
 import { Repository } from 'typeorm';
 import {
@@ -12,7 +13,6 @@ import {
   UpdateFormTypeDto,
 } from './dto';
 import { FormType } from './entities/form-type.entity';
-import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class FormTypesService {
@@ -42,8 +42,8 @@ export class FormTypesService {
     return plainToInstance(FormTypeResponseDto, formTypes);
   }
 
-  findOne(id: number) {
-    const formType = this.formTypeRepository.findOne({ where: { id } });
+  async findOne(id: number): Promise<FormTypeResponseDto> {
+    const formType = await this.formTypeRepository.findOne({ where: { id } });
     if (!formType) throw new NotFoundException('Form type not found');
     return plainToInstance(FormTypeResponseDto, formType);
   }
@@ -79,7 +79,7 @@ export class FormTypesService {
     return plainToInstance(FormTypeResponseDto, savedFormType);
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<void> {
     await this.findOne(id);
     const isUnable = await hasChildEntities(
       this.formTypeRepository,

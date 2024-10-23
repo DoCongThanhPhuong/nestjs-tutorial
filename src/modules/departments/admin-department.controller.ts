@@ -25,7 +25,7 @@ import {
   UpdateDepartmentDto,
 } from './dto';
 
-@ApiTags('admin/departments')
+@ApiTags('Admin/Departments')
 @ApiBearerAuth()
 @Controller('admin/departments')
 export class AdminDepartmentsController {
