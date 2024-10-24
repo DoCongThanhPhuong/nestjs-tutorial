@@ -69,7 +69,7 @@ export class SubmissionsController {
   @ApiOkResponse({ type: SubmissionResponseDto })
   @Get(':submissionId')
   getOne(
-    @Param() submissionId: number,
+    @Param('submissionId') submissionId: number,
     @Param('formId') formId: number,
     @CurrentUserId() userId,
   ) {

@@ -7,11 +7,12 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateFormTypeDto, UpdateFormTypeDto } from './dto';
 import { FormTypesService } from './form-types.service';
 
 @ApiTags('Form types')
+@ApiBearerAuth()
 @Controller('form-types')
 export class FormTypesController {
   constructor(private readonly formTypesService: FormTypesService) {}

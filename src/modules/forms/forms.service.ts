@@ -112,7 +112,7 @@ export class FormsService {
 
     const [forms, total] = await this.formRepository.findAndCount({
       skip: (page - 1) * size,
-      select: ['title', 'publishedAt', 'closedAt'],
+      select: ['id', 'title', 'publishedAt', 'closedAt'],
       take: size,
       where: where,
       order: { id: 'DESC' },
@@ -152,10 +152,11 @@ export class FormsService {
   ): Promise<FormResponseDto> {
     const form = await this.findFormById(formId);
     if (userId && userId !== form.creatorId) {
-      throw new BadRequestException('You are not allowed to update');
+      throw new BadRequestException('You are not the creator');
     }
-    await this.formRepository.save({ ...form, updateFormDto });
-    return plainToInstance(FormResponseDto, form);
+    Object.assign(form, updateFormDto);
+    const updatedForm = await this.formRepository.save(form);
+    return plainToInstance(FormResponseDto, updatedForm);
   }
 
   async deleteForm(formId: number): Promise<void> {
@@ -185,7 +186,7 @@ export class FormsService {
 
     const [forms, total] = await this.formRepository.findAndCount({
       skip: (page - 1) * size,
-      select: ['title', 'publishedAt', 'closedAt'],
+      select: ['id', 'title', 'publishedAt', 'closedAt'],
       take: size,
       where: where,
       order: { id: 'DESC' },
@@ -200,6 +201,7 @@ export class FormsService {
   ): Promise<FormResponseDto> {
     const form = await this.formRepository.findOne({
       where: { id: formId, isPublished: false },
+      relations: ['fields', 'formType'],
     });
     if (!form) throw new NotFoundException('Form not found');
     if (userId && form.creatorId !== userId) {

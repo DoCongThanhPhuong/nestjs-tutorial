@@ -42,6 +42,10 @@ export class FormResponseDto {
 export class FormItemDto {
   @ApiProperty()
   @Expose()
+  id: number;
+
+  @ApiProperty()
+  @Expose()
   title: string;
 
   @ApiProperty()

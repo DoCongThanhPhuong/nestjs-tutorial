@@ -23,7 +23,7 @@ export class CreateUserDto {
   @IsString()
   lastname: string;
 
-  @ApiProperty({ example: 'test1@example.com', type: String })
+  @ApiProperty({ example: 'user01@gmail.com', type: String })
   @IsNotEmpty()
   @Transform(lowerCaseTransformer)
   @IsEmail()
@@ -39,7 +39,7 @@ export class CreateUserDto {
   @IsString()
   job_title?: string;
 
-  @ApiProperty({ example: 'Fresher', type: String })
+  @ApiProperty()
   @IsOptional()
   @IsEnum(EGender)
   gender?: EGender;

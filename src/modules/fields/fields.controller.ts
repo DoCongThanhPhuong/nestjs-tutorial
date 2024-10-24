@@ -1,10 +1,11 @@
 import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUserId } from 'src/decorators';
 import { CreateFieldDto, FieldResponseDto, UpdateFieldDto } from './dto';
 import { FieldsService } from './fields.service';
 
 @ApiTags('Fields')
+@ApiBearerAuth()
 @Controller('forms/:formId/fields')
 export class FieldsController {
   constructor(private readonly fieldsService: FieldsService) {}

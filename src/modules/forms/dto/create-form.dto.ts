@@ -4,7 +4,7 @@ import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 export class CreateFormDto {
   @ApiProperty({
     description: 'Title of the form',
-    example: 'User Feedback Form',
+    example: 'Probation Form',
   })
   @IsNotEmpty()
   @IsString()
@@ -12,7 +12,7 @@ export class CreateFormDto {
 
   @ApiProperty({
     description: 'Description of the form',
-    example: 'This form is used to collect user feedback',
+    example: 'Probation Form 2024',
   })
   @IsNotEmpty()
   @IsString()

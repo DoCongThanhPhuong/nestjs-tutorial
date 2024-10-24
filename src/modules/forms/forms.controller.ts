@@ -51,11 +51,33 @@ export class FormsController {
     return this.formsService.listPublishedForms(query);
   }
 
+  @ApiOperation({ summary: 'Get own forms' })
+  @ApiOkResponse({ type: FormResponseDto })
+  @Get('my-forms')
+  listOwn(
+    @CurrentUserId() userId: number,
+    @Query() query: QueryFormDto,
+  ): Promise<PaginationResponseDto<FormItemDto>> {
+    return this.formsService.listForms(query, userId);
+  }
+
   @ApiOperation({ summary: 'View a published form' })
   @ApiOkResponse({ type: FormResponseDto })
   @Get(':id')
   findOne(@Param('id') id: number): Promise<FormResponseDto> {
     return this.formsService.findFormByIdWithCache(id);
+  }
+
+  @ApiOperation({ summary: 'Update own form' })
+  @ApiOkResponse({ type: FormResponseDto })
+  @Patch(':id')
+  update(
+    @Param('id') formId: number,
+    @Body() updateFormDto: UpdateFormDto,
+    @CurrentUserId() userId: number,
+  ): Promise<FormResponseDto> {
+    console.log('🚀 ~ FormsController ~ updateFormDto:', updateFormDto);
+    return this.formsService.updateForm(formId, updateFormDto, userId);
   }
 
   @ApiOperation({ summary: 'Publish own form' })
@@ -67,27 +89,6 @@ export class FormsController {
     @CurrentUserId() userId: number,
   ): Promise<FormResponseDto> {
     return this.formsService.publishForm(formId, publishFormDto, userId);
-  }
-
-  @ApiOperation({ summary: 'Update own form' })
-  @ApiOkResponse({ type: FormResponseDto })
-  @Patch(':id')
-  update(
-    @Param('id') formId: number,
-    @Body() updateFormDto: UpdateFormDto,
-    @CurrentUserId() userId: number,
-  ): Promise<FormResponseDto> {
-    return this.formsService.updateForm(formId, updateFormDto, userId);
-  }
-
-  @ApiOperation({ summary: 'Get own forms' })
-  @ApiOkResponse({ type: FormResponseDto })
-  @Get('my-forms')
-  listOwn(
-    @CurrentUserId() userId: number,
-    @Query() query: QueryFormDto,
-  ): Promise<PaginationResponseDto<FormItemDto>> {
-    return this.formsService.listForms(query, userId);
   }
 
   @ApiOperation({ summary: 'View a draft' })

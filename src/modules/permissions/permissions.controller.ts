@@ -32,7 +32,7 @@ export class PermissionsController {
   @ApiOperation({ summary: 'Update permission by id' })
   @Patch(':id')
   update(
-    @Param() id: number,
+    @Param('id') id: number,
     @Body() updatePermissionDto: UpdatePermissionDto,
   ) {
     return this.permissionsService.updatePermission(id, updatePermissionDto);
@@ -40,7 +40,7 @@ export class PermissionsController {
 
   @ApiOperation({ summary: 'Delete permission by id' })
   @Delete(':id')
-  delete(@Param() id: number) {
+  delete(@Param('id') id: number) {
     return this.permissionsService.deletePermission(id);
   }
 }

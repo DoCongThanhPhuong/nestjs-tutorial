@@ -322,7 +322,7 @@ export class UsersService {
     departmentId: number,
     employeeId: number,
     userId: number,
-  ) {
+  ): Promise<UserResponseDto> {
     const user = await this.findUserByIdWithCache(employeeId);
     if (!user) throw new NotFoundException('User not found');
     if (user.departmentId === departmentId) {

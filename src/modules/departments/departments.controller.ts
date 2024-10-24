@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Request } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query, Request } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { PaginationResponse } from 'src/common/dto';
 import { CurrentUserId } from 'src/decorators';
-import { QueryUserDto, UserResponseDto } from '../users/dto';
+import { QueryUserDto, UserItemDto, UserResponseDto } from '../users/dto';
 import { UsersService } from '../users/users.service';
 import { DepartmentsService } from './departments.service';
 import { DepartmentResponseDto } from './dto';
@@ -40,12 +40,12 @@ export class DepartmentsController {
 
   @ApiOperation({ summary: 'List department employees' })
   @ApiOkResponse({
-    type: PaginationResponse(UserResponseDto),
+    type: PaginationResponse(UserItemDto),
   })
   @Get(':departmentId/employees')
   listDepartmentEmployees(
     @Param('departmentId') departmentId: number,
-    @Body() query: QueryUserDto,
+    @Query() query: QueryUserDto,
     @Request() req,
   ) {
     return this.usersService.listDepartmentEmployees(

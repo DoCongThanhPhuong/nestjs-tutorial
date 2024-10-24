@@ -181,7 +181,7 @@ export class SubmissionsService {
 
     if (!submission) throw new NotFoundException('Submission not found');
 
-    if (userId && submission.managerId === userId) {
+    if (userId && submission.managerId !== userId) {
       throw new BadRequestException('Unable to view this submission');
     }
 

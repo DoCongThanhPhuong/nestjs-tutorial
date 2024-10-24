@@ -39,7 +39,10 @@ export class AdminSubmissionsController {
   @ApiOperation({ summary: 'View a submission' })
   @ApiOkResponse({ type: SubmissionResponseDto })
   @Get(':submissionId')
-  getOne(@Param() submissionId: number, @Param('formId') formId: number) {
+  getOne(
+    @Param('submissionId') submissionId: number,
+    @Param('formId') formId: number,
+  ) {
     return this.submissionsService.findOneSubmissionById(submissionId, formId);
   }
 
